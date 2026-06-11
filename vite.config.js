@@ -1,5 +1,4 @@
 import { defineConfig } from 'vite'
-import tailwindcss from '@tailwindcss/vite'
 import { sync as globSync } from 'glob'
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
@@ -34,7 +33,7 @@ const pageEntries = Object.fromEntries(
 )
 
 export default defineConfig({
-  plugins: [tailwindcss()],
+  plugins: [],
 
   css: {
     preprocessorOptions: {
