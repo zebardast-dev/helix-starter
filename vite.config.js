@@ -78,14 +78,6 @@ export default defineConfig({
         api: 'modern-compiler',
         importers: [sassGlobImporter],
         silenceDeprecations: ['import'],
-        additionalData(content, filepath) {
-          // Page SCSS files are standalone bundles (no @import "tailwindcss"),
-          // so @reference lets @apply resolve utilities without duplicating Tailwind output.
-          if (filepath.replace(/\\/g, '/').includes('/scss/pages/')) {
-            return `@reference "tailwindcss";\n${content}`
-          }
-          return content
-        },
       },
     },
   },
