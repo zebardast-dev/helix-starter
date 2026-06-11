@@ -1,9 +1,12 @@
 /vendor/
+/node_modules/
+/dist/
 /storage/cache/*
 /storage/logs/*
 !/storage/cache/.gitkeep
 !/storage/cache/views/.gitkeep
 !/storage/logs/.gitkeep
 composer.lock
+package-lock.json
 .DS_Store
 Thumbs.db
