@@ -1,2 +1,10 @@
 @use 'base/variables';
 @use 'base/typography';
+
+// Tailwind CSS — SASS passes this through; Tailwind's Vite plugin processes it
+@import "tailwindcss";
+
+// Auto-import component/partial styles — all processed in one CSS bundle,
+// so @apply works correctly in component files
+@import '../views/components/**/*.scss';
+@import '../views/partials/**/*.scss';
