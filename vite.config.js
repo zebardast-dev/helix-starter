@@ -32,8 +32,45 @@ const pageEntries = Object.fromEntries(
   })
 )
 
+// Auto-discover standalone SCSS page entries from resources/scss/pages/
+// Maps each .scss file to a virtual JS module that only imports it,
+// so Vite processes it through PostCSS/Tailwind and outputs a separate CSS file.
+const scssPageMap = new Map(
+  globSync('resources/scss/pages/**/*.scss', { cwd: __dirname }).map(file => {
+    const normalized = file.replace(/\\/g, '/')
+    const name = normalized.replace('resources/scss/pages/', '').replace('.scss', '')
+    const id = 'virtual:scss-page/' + name
+    const abs = resolve(__dirname, normalized).replace(/\\/g, '/')
+    return [id, { name, abs }]
+  })
+)
+
+const scssPagePlugin = {
+  name: 'scss-page-entries',
+  resolveId(id) {
+    return scssPageMap.has(id) ? '\0' + id : null
+  },
+  load(id) {
+    if (!id.startsWith('\0virtual:scss-page/')) return null
+    const { abs } = scssPageMap.get(id.slice(1))
+    return `import ${JSON.stringify(abs)}`
+  },
+  generateBundle(_, bundle) {
+    // Remove the empty JS stubs — only the CSS output is needed
+    for (const [file, chunk] of Object.entries(bundle)) {
+      if (chunk.type === 'chunk' && chunk.facadeModuleId?.includes('virtual:scss-page/') && !chunk.code.trim()) {
+        delete bundle[file]
+      }
+    }
+  },
+}
+
+const scssPageEntries = Object.fromEntries(
+  [...scssPageMap.entries()].map(([id, { name }]) => [name, id])
+)
+
 export default defineConfig({
-  plugins: [],
+  plugins: [scssPagePlugin],
 
   css: {
     preprocessorOptions: {
@@ -41,6 +78,14 @@ export default defineConfig({
         api: 'modern-compiler',
         importers: [sassGlobImporter],
         silenceDeprecations: ['import'],
+        additionalData(content, filepath) {
+          // Page SCSS files are standalone bundles (no @import "tailwindcss"),
+          // so @reference lets @apply resolve utilities without duplicating Tailwind output.
+          if (filepath.replace(/\\/g, '/').includes('/scss/pages/')) {
+            return `@reference "tailwindcss";\n${content}`
+          }
+          return content
+        },
       },
     },
   },
@@ -53,6 +98,7 @@ export default defineConfig({
       input: {
         app: resolve(__dirname, 'resources/js/app.js'),
         ...pageEntries,
+        ...scssPageEntries,
       },
 
       output: {
