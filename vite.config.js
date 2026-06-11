@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [tailwindcss()],
 
   build: {
-    outDir: 'dist',
+    outDir: 'resources/assets/dist',
     emptyOutDir: true,
 
     rollupOptions: {

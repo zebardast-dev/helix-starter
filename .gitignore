@@ -1,6 +1,6 @@
 /vendor/
 /node_modules/
-/dist/
+/resources/assets/dist/
 /storage/cache/*
 /storage/logs/*
 !/storage/cache/.gitkeep
