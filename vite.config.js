@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite'
 import { sync as globSync } from 'glob'
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname, resolve } from 'path'
 
@@ -24,29 +24,90 @@ const sassGlobImporter = {
   },
 }
 
-// Auto-discover page-specific JS entries from resources/js/pages/
-const pageEntries = Object.fromEntries(
-  globSync('resources/js/pages/**/*.js', { cwd: __dirname }).map(file => {
-    const name = file.replace('resources/js/pages/', '').replace('.js', '')
-    return [name, resolve(__dirname, file)]
-  })
-)
+// Virtual module: imports all JS files from resources/js/global/.
+// Using load() hook instead of import.meta.glob so new files are detected
+// without restarting watch mode — addWatchFile(dir) causes re-evaluation
+// when the directory changes (file added/removed).
+const jsGlobalPlugin = {
+  name: 'js-global',
+  resolveId(id) {
+    if (id === 'virtual:js-global') return '\0virtual:js-global'
+    return null
+  },
+  load(id) {
+    if (id !== '\0virtual:js-global') return null
+    this.addWatchFile(resolve(__dirname, 'resources/js/global'))
+    const index = resolve(__dirname, 'resources/js/global/index.js')
+    const files = globSync('resources/js/global/**/*.js', { cwd: __dirname, absolute: true })
+      .filter(f => f.replace(/\\/g, '/') !== index.replace(/\\/g, '/'))
+      .sort()
+    const entry = existsSync(index) ? [index] : files
+    return entry.map(f => `import ${JSON.stringify(f.replace(/\\/g, '/'))}`).join('\n') || 'export {}'
+  },
+}
 
-// Auto-discover standalone SCSS page entries from resources/scss/pages/
-// Maps each .scss file to a virtual JS module that only imports it,
-// so Vite processes it through PostCSS/Tailwind and outputs a separate CSS file.
-const scssPageMap = new Map(
-  globSync('resources/scss/pages/**/*.scss', { cwd: __dirname }).map(file => {
-    const normalized = file.replace(/\\/g, '/')
-    const name = normalized.replace('resources/scss/pages/', '').replace('.scss', '')
-    const id = 'virtual:scss-page/' + name
-    const abs = resolve(__dirname, normalized).replace(/\\/g, '/')
-    return [id, { name, abs }]
-  })
-)
+// Virtual module: imports all JS files from views components and partials.
+// Same pattern as jsGlobalPlugin — directory-level watch ensures new files
+// trigger a rebuild without restart.
+const jsViewsPlugin = {
+  name: 'js-views',
+  resolveId(id) {
+    if (id === 'virtual:js-views') return '\0virtual:js-views'
+    return null
+  },
+  load(id) {
+    if (id !== '\0virtual:js-views') return null
+    this.addWatchFile(resolve(__dirname, 'resources/views/components'))
+    this.addWatchFile(resolve(__dirname, 'resources/views/partials'))
+    const files = globSync(
+      ['resources/views/components/**/*.js', 'resources/views/partials/**/*.js'],
+      { cwd: __dirname, absolute: true }
+    )
+    return files.map(f => `import ${JSON.stringify(f.replace(/\\/g, '/'))}`).join('\n') || 'export {}'
+  },
+}
+
+// Watches SCSS files inside views so changes trigger a rebuild.
+// The SASS glob importer inlines content as a string, so Vite doesn't track
+// individual component files as dependencies.
+const scssViewsWatcher = {
+  name: 'scss-views-watcher',
+  buildStart() {
+    this.addWatchFile(resolve(__dirname, 'resources/views/components'))
+    this.addWatchFile(resolve(__dirname, 'resources/views/partials'))
+    const files = globSync(
+      ['resources/views/components/**/*.scss', 'resources/views/partials/**/*.scss'],
+      { cwd: __dirname, absolute: true }
+    )
+    for (const file of files) this.addWatchFile(file)
+  },
+}
+
+// Discovers SCSS page entries dynamically on every build so new files are
+// picked up without restarting watch mode.
+let scssPageMap = new Map()
 
 const scssPagePlugin = {
   name: 'scss-page-entries',
+  options(opts) {
+    scssPageMap = new Map(
+      globSync('resources/scss/pages/**/*.scss', { cwd: __dirname }).map(file => {
+        const normalized = file.replace(/\\/g, '/')
+        const name = normalized.replace('resources/scss/pages/', '').replace('.scss', '')
+        const id = 'virtual:scss-page/' + name
+        const abs = resolve(__dirname, normalized)
+        return [id, { name, abs }]
+      })
+    )
+    const entries = Object.fromEntries(
+      [...scssPageMap.entries()].map(([id, { name }]) => [name, id])
+    )
+    opts.input = { ...opts.input, ...entries }
+    return opts
+  },
+  buildStart() {
+    this.addWatchFile(resolve(__dirname, 'resources/scss/pages'))
+  },
   resolveId(id) {
     return scssPageMap.has(id) ? '\0' + id : null
   },
@@ -56,21 +117,47 @@ const scssPagePlugin = {
     return `import ${JSON.stringify(abs)}`
   },
   generateBundle(_, bundle) {
-    // Remove the empty JS stubs — only the CSS output is needed
+    const pageNames = new Set([...scssPageMap.values()].map(({ name }) => name))
+
     for (const [file, chunk] of Object.entries(bundle)) {
       if (chunk.type === 'chunk' && chunk.facadeModuleId?.includes('virtual:scss-page/') && !chunk.code.trim()) {
+        delete bundle[file]
+        continue
+      }
+
+      const cssMatch = file.match(/^css\/(.+)\.css$/)
+      if (chunk.type === 'asset' && cssMatch && pageNames.has(cssMatch[1])) {
+        const newFile = `css/pages/${cssMatch[1]}.css`
+        bundle[newFile] = { ...chunk, fileName: newFile }
         delete bundle[file]
       }
     }
   },
 }
 
-const scssPageEntries = Object.fromEntries(
-  [...scssPageMap.entries()].map(([id, { name }]) => [name, id])
-)
+// Discovers JS page entries dynamically on every build so new files are
+// picked up without restarting watch mode.
+// Output: dist/js/pages/about.js (mirrors SCSS pages structure)
+const jsPagePlugin = {
+  name: 'js-page-entries',
+  options(opts) {
+    const entries = Object.fromEntries(
+      globSync('resources/js/pages/**/*.js', { cwd: __dirname }).map(file => {
+        const normalized = file.replace(/\\/g, '/')
+        const name = 'pages/' + normalized.replace('resources/js/pages/', '').replace('.js', '')
+        return [name, resolve(__dirname, normalized)]
+      })
+    )
+    opts.input = { ...opts.input, ...entries }
+    return opts
+  },
+  buildStart() {
+    this.addWatchFile(resolve(__dirname, 'resources/js/pages'))
+  },
+}
 
 export default defineConfig({
-  plugins: [scssPagePlugin],
+  plugins: [jsGlobalPlugin, jsViewsPlugin, scssViewsWatcher, scssPagePlugin, jsPagePlugin],
 
   css: {
     preprocessorOptions: {
@@ -78,19 +165,26 @@ export default defineConfig({
         api: 'modern-compiler',
         importers: [sassGlobImporter],
         silenceDeprecations: ['import'],
+        additionalData(content, filepath) {
+          if (filepath.replace(/\\/g, '/').includes('/scss/pages/')) {
+            return `@reference "tailwindcss";\n${content}`
+          }
+          return content
+        },
       },
     },
   },
 
+  publicDir: false,
+
   build: {
-    outDir: 'resources/assets/dist',
+    outDir: 'public/dist',
     emptyOutDir: true,
 
     rollupOptions: {
       input: {
         app: resolve(__dirname, 'resources/js/app.js'),
-        ...pageEntries,
-        ...scssPageEntries,
+        // page JS and SCSS entries are injected dynamically by jsPagePlugin and scssPagePlugin
       },
 
       output: {

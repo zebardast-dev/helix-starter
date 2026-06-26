@@ -3,11 +3,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
+    "dev": "node --no-deprecation watch.js",
     "build": "vite build"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.0",
+    "browser-sync": "^3.0.4",
+    "chokidar": "^5.0.0",
     "glob": "^11.0.0",
     "postcss": "^8.5.0",
     "sass-embedded": "^1.80.0",
