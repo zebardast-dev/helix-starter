@@ -12,10 +12,10 @@ class InitialSetup
      * Pages to create on activation: ['slug' => 'Title']
      */
     protected static array $pages = [
-        'home'    => 'صفحه اصلی',
-        'about'   => 'درباره ما',
-        'blog'    => 'مقالات',
-        'contact' => 'تماس با ما',
+        'home'    => 'Home',
+        'about'   => 'About',
+        'blog'    => 'Blog',
+        'contact' => 'Contact',
     ];
 
     /** Slug of the static front page */
@@ -46,7 +46,7 @@ class InitialSetup
 
     protected static function setup(): void
     {
-        // update_option('blogdescription', 'توضیح سایت');
+        // update_option('blogdescription', 'Site tagline');
         // update_option('posts_per_page', 12);
         // update_option('woocommerce_currency', 'IRT');
     }
