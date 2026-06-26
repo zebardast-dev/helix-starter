@@ -1,5 +1,6 @@
 /vendor/
 /node_modules/
+.env
 /resources/assets/dist/
 /storage/cache/*
 /storage/logs/*

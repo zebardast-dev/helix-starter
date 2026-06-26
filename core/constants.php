@@ -13,5 +13,3 @@ define('NO_IMAGE',   IMAGES_URI . '/no-image.png');
 
 define('OPTIONS_KEY', 'theme_options');
 define('OPTIONS',     get_option(OPTIONS_KEY, []));
-
-define('DISABLE_TEMPLATE_CACHE', true);
