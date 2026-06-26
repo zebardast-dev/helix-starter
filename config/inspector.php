@@ -13,10 +13,13 @@ return [
      * Remove a key to disable that collector.
      */
     'collectors' => [
+        'errors',
+        'hooks',
         'performance',
         'queries',
         'views',
         'seo',
+        'environment',
     ],
 
 ];
