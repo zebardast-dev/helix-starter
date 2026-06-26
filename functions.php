@@ -51,7 +51,30 @@ foreach ($services as $service) {
 
 /*
 |--------------------------------------------------------------------------
-| 5. Optional Modules
+| 5. Register Post Types
+|--------------------------------------------------------------------------
+*/
+
+add_action('init', function () use ($app) {
+    $classes = require THEME_DIR . '/core/post-types.php';
+
+    foreach ($classes as $class) {
+        $app->make($class)->register();
+    }
+
+    // Auto-flush rewrite rules when post types or taxonomies change
+    if (!empty($classes)) {
+        $hash = md5(serialize($classes));
+        if (get_option('_helix_pt_hash') !== $hash) {
+            flush_rewrite_rules(false);
+            update_option('_helix_pt_hash', $hash);
+        }
+    }
+});
+
+/*
+|--------------------------------------------------------------------------
+| 6. Optional Modules
 |--------------------------------------------------------------------------
 */
 
@@ -61,7 +84,7 @@ if (did_action('elementor/loaded')) {
 
 /*
 |--------------------------------------------------------------------------
-| 6. Assets
+| 7. Assets
 |--------------------------------------------------------------------------
 */
 
@@ -71,7 +94,7 @@ require_once THEME_DIR . '/assets/fonts.php';
 
 /*
 |--------------------------------------------------------------------------
-| 7. WordPress Hooks
+| 8. WordPress Hooks
 |--------------------------------------------------------------------------
 */
 

@@ -1,0 +1,41 @@
+#!/usr/bin/env php
+<?php
+
+// Find WordPress root
+$wpRoot = (function () {
+    $dir = __DIR__;
+    while ($dir !== dirname($dir)) {
+        if (file_exists($dir . '/wp-load.php')) {
+            return $dir;
+        }
+        $dir = dirname($dir);
+    }
+    return null;
+})();
+
+if (!$wpRoot) {
+    fwrite(STDERR, "\033[31m  Error:\033[0m WordPress installation not found.\n");
+    exit(1);
+}
+
+// Minimal HTTP context for WP CLI
+$_SERVER += [
+    'HTTP_HOST'      => 'localhost',
+    'REQUEST_URI'    => '/',
+    'REQUEST_METHOD' => 'GET',
+    'SERVER_NAME'    => 'localhost',
+    'SERVER_PORT'    => '80',
+];
+
+require_once $wpRoot . '/wp-load.php';
+
+// Boot kernel
+$kernel = new Helix\Console\Kernel($argv);
+
+// Register custom commands from theme
+$commandsFile = __DIR__ . '/core/commands.php';
+if (file_exists($commandsFile)) {
+    $kernel->register_many(require $commandsFile);
+}
+
+exit($kernel->run());
