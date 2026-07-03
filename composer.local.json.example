@@ -1,0 +1,11 @@
+{
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../helix-framework",
+      "options": {
+        "symlink": true
+      }
+    }
+  ]
+}
