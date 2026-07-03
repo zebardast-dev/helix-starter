@@ -1,32 +1,47 @@
 # Helix Starter
 
-A ready-to-use starter theme built on HelixPress.
+`zebardast-dev/helix-starter`
+
+A production-ready starter theme built on HelixPress Framework.
 
 ## Requirements
 
 - PHP 8.1+
-- WordPress 5.9+
+- WordPress 6.0+
+- Node.js & npm (for asset compilation)
 - Composer
-- Node.js 18+
 
-## Installation
+## Quick Start
+
+### 1) Install via Composer
 
 ```bash
-# Clone into your WordPress themes directory
-git clone https://github.com/zebardast-dev/helix-starter.git wp-content/themes/my-theme
-
-cd wp-content/themes/my-theme
-
-# Install PHP dependencies
-composer install
-
-# Install JS dependencies and build assets
-npm install && npm run build
+cd wp-content/themes
+composer create-project zebardast-dev/helix-starter my-theme
+cd my-theme
 ```
 
-Activate the theme from WordPress admin, then copy `.env.example` to `.env` and configure.
+### 2) Setup environment
+
+```bash
+cp .env.example .env
+```
+
+### 3) Build assets
+
+```bash
+# Production build
+npm install && npm run build
+
+# Dev mode with live reload
+npm run dev
+```
+
+Activate the theme from WordPress admin.
 
 ## Local Development (with framework symlink)
+
+To work on the framework and starter simultaneously, symlink the local framework:
 
 ```bash
 composer config repositories.helix-framework \
@@ -43,14 +58,34 @@ composer install
 php helix list
 php helix cache:clear
 php helix make:component Alert
+php helix make:composer Home
+php helix db:seed
 ```
+
+## Documentation
+
+Full documentation is currently being prepared.
+
+Topics that will be covered:
+
+- Getting Started
+- Configuration
+- Blade Templates
+- Components
+- View Composers
+- Models & Queries
+- Assets
+- Custom Post Types
+- CLI Commands
+- Inspector
+- WooCommerce
 
 ## Credits
 
 HelixPress was developed through a human-AI collaborative workflow.
 
 - **Architecture & Product Direction:** Mostafa Zebardast
-- **Research & Technical Analysis:** ChatGPT & Claude
+- **Idea & Research:** Mostafa Zebardast ([@zebardast-dev](https://github.com/zebardast-dev)), Amirhossein Zebardast ([@amirz-dev](https://github.com/amirz-dev))
 - **Implementation & Coding:** Mostafa Zebardast & Claude (Anthropic)
 - **Review & Refinement:** AI-assisted
 
