@@ -14,6 +14,15 @@
       "App\\": "app/"
     }
   },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../helix-framework",
+      "options": {
+        "symlink": true
+      }
+    }
+  ],
   "config": {
     "optimize-autoloader": true,
     "preferred-install": "dist"
