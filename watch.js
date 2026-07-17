@@ -9,8 +9,25 @@ import browserSync from 'browser-sync'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// WordPress dev URL — override with: DEV_URL=http://localhost/mysite npm run dev
-const DEV_URL = process.env.DEV_URL || 'http://localhost/dev'
+let projectFolder = ''
+
+const normalizedPath = __dirname.replace(/\\/g, '/')
+
+if (normalizedPath.includes('/www/')) {
+  const afterWww = normalizedPath.split('/www/')[1]
+  projectFolder = afterWww.split('/')[0]
+} else {
+  const parts = normalizedPath.split('/')
+  const themeIndex = parts.indexOf('wp-content')
+  if (themeIndex > 0) {
+    projectFolder = parts[themeIndex - 1]
+  } else {
+    projectFolder = parts[parts.length - 1]
+  }
+}
+
+const BASE_DEV_URL = process.env.DEV_URL || `http://localhost/${projectFolder}/`
+const DEV_URL = BASE_DEV_URL.endsWith('/') ? BASE_DEV_URL : `${BASE_DEV_URL}/`
 
 // ── ANSI ──────────────────────────────────────────────────────────────────────
 const c = {

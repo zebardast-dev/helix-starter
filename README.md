@@ -64,21 +64,28 @@ php helix db:seed
 
 ## Documentation
 
-Full documentation is currently being prepared.
+Welcome to the HelixPress documentation.
 
-Topics that will be covered:
+The full documentation is currently being prepared. In the meantime, you can use the official docs portal below to explore the available guides and topics.
+
+**Official Documentation:**  
+[https://helix.runflare.run/](https://helix.runflare.run/)
+
+### Topics coming soon
 
 - Getting Started
 - Configuration
 - Blade Templates
 - Components
 - View Composers
-- Models & Queries
+- Models and Queries
 - Assets
 - Custom Post Types
-- CLI Commands
+- CLI and Seeders
 - Inspector
 - WooCommerce
+- Actions and Filters
+- File Uploads
 
 ## Credits
 
